@@ -68,9 +68,13 @@ def check_env():
             raise SystemExit(1)
         #gau.die("config.BASETMP is not mounted as tmpfs filesystem. Run: sudo mkdir /mnt/vuzzer , followed by sudo mount -t tmpfs -o size=1024M tmpfs /mnt/vuzzer")
 
-def run(cmd):
+def run(cmd, is_stdin=False, tfl=None):
+    if is_stdin:
+        stdin = open(tfl, "rb")
+    else:
+        stdin = None
     #print "[*] Just about to run ", cmd
-    proc = subprocess.Popen(" ".join(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)	
+    proc = subprocess.Popen(" ".join(cmd), stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)	
     stdout, stderr = proc.communicate()
     #print "[*] Run complete..\n"
     #print "## RC %d"%proc.returncode
@@ -165,13 +169,18 @@ def calculate_error_bb():
 
 def execute(tfl):
     bbs={}
-    args=config.SUT % tfl
+    if "%s" in config.SUT:
+        args=config.SUT % tfl
+        is_stdin = False
+    else:
+    	args=config.SUT
+    	is_stdin = True
     runcmd=config.BBCMD+args.split(' ')
     try:
         os.unlink(config.BBOUT)
     except:
         pass
-    retc = run(runcmd)
+    retc = run(runcmd, is_stdin=is_stdin, tfl=tfl)
     #check if loading address was changed
     #liboffsetprev=int(config.LIBOFFSETS[1],0)
     if config.LIBNUM == 2:
@@ -210,7 +219,12 @@ def isNonPrintable(hexstr):
         return False
 
 def execute2(tfl,fl, is_initial=0):
-    args=config.SUT % tfl
+    if "%s" in config.SUT:
+        args=config.SUT % tfl
+        is_stdin = False
+    else:
+    	args=config.SUT
+    	is_stdin = True
     args='\"' + args + '\"' # For cmd shell
     pargs=config.PINTNTCMD[:]
     if is_initial == 1:
@@ -221,7 +235,7 @@ def execute2(tfl,fl, is_initial=0):
     #runcmd=pargs + args.split.split(' ')
     
     #print "[*] Executing: ",runcmd 
-    retc = run(runcmd)
+    retc = run(runcmd, is_stdin=is_stdin, tfl=tfl)
     if config.CLEANOUT == True:
         gau.delete_out_file(tfl)
     return retc
@@ -823,8 +837,7 @@ def main():
                 per_gen_fnum +=1
                 tfl=os.path.join(config.INPUTD,fl)
                 iln=os.path.getsize(tfl)
-                args = (config.SUT % tfl).split(' ')
-                progname = os.path.basename(args[0])
+                progname = os.path.basename(config.SUT)
                 (bbs,retc)=execute(tfl)
                 if per_gen_fnum % 10 ==0:
                     print "[**] Gen: %d. Executed %d of %d.**"%(genran,per_gen_fnum,config.POPSIZE)

@@ -46,6 +46,8 @@
 #include "tagmap.h"
 #include <assert.h>
 
+extern std::set<int> fdset;
+
 KNOB<std::string> KnobImgDesc(KNOB_MODE_WRITEONCE, "pintool", "img_dir", "", "IMG log dir");
 
 static KNOB<std::string> FileKnob(KNOB_MODE_WRITEONCE, "pintool", "filename",
@@ -122,6 +124,7 @@ main(int argc, char **argv, char* envp[])
 	out.open(CmpRawKnob.Value().c_str(), std::ios::binary | std::ios::trunc | std::ios::out );
 	out_lea.open(LeaRawKnob.Value().c_str(), std::ios::binary | std::ios::trunc | std::ios::out );
 	filename = FileKnob.Value();
+    fdset.insert(0);
 	limit_offset = atoi(SizeKnob.Value().c_str());
     PIN_THREAD_UID threadUid;
     if(KnobTimeout.Value()> 0){
